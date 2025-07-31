@@ -43,29 +43,51 @@ Our simple `add` function is tested with:
 
 ### 2. Advanced Workflow (`test.yml`)
 **Production-ready features:**
-- Tests multiple Python versions
+- Tests multiple Python versions (3.9-3.12)
 - Generates coverage reports
+- Professional CI/CD setup
+- Detailed test summaries
+
+### 3. Report Generator (`generate-reports.yml`)
+**HTML report generation:**
+- Creates beautiful test dashboards
+- Generates coverage reports
+- Provides downloadable artifacts
+- Works without GitHub Pages setup
+
+### 4. Pages Deployment (`pages.yml`) - Optional
+**Live website features:**
 - Deploys to GitHub Pages
-- Includes notifications
+- Creates live test dashboard
+- Requires Pages to be enabled
+- Professional presentation
 
 ## 🚀 How to Use
 
-### Step 1: Push to GitHub
+### Step 1: Enable GitHub Pages (Optional)
+If you want the live website feature:
+1. Go to your repository **Settings**
+2. Scroll down to **Pages** section
+3. Under **Source**, select **"GitHub Actions"**
+4. Save the settings
+
+### Step 2: Push to GitHub
 ```bash
 git add .
 git commit -m "Add automated testing"
 git push origin main
 ```
 
-### Step 2: Watch the Magic! ✨
+### Step 3: Watch the Magic! ✨
 1. Go to your GitHub repository
 2. Click on the "Actions" tab
 3. Watch your tests run automatically
 4. Download the HTML reports when complete
 
-### Step 3: View Reports
+### Step 4: View Reports
 - **Test Reports**: Download from the Actions artifacts
-- **GitHub Pages**: Available at `https://yourusername.github.io/your-repo-name`
+- **GitHub Pages** (if enabled): Available at `https://yourusername.github.io/your-repo-name`
+- **Artifacts**: Click on any workflow run and download the `html-reports` artifact
 
 ## 📊 What You'll See
 
