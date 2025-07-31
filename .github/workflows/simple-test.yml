@@ -37,7 +37,7 @@ jobs:
 
     # Step 5: Save the test report
     - name: 📊 Save test report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()  # Always save, even if tests fail
       with:
         name: test-report
