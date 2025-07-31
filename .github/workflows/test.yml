@@ -1,0 +1,137 @@
+name: Python Testing Demo - Automated Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11, 3.12]
+
+    steps:
+    - name: 🛒 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-html pytest-cov pytest-xvfb
+
+    - name: 🧪 Run tests with coverage
+      run: |
+        pytest test_main.py -v \
+          --html=reports/test_report_python${{ matrix.python-version }}.html \
+          --self-contained-html \
+          --cov=main \
+          --cov-report=html:reports/coverage_python${{ matrix.python-version }} \
+          --cov-report=xml:reports/coverage_python${{ matrix.python-version }}.xml \
+          --junit-xml=reports/junit_python${{ matrix.python-version }}.xml
+
+    - name: 📊 Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-python${{ matrix.python-version }}
+        path: |
+          reports/
+          
+    - name: 📈 Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.12'
+      with:
+        file: reports/coverage_python${{ matrix.python-version }}.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  deploy-reports:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 🛒 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📥 Download all test artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: all-reports
+
+    - name: 🏗️ Create combined report
+      run: |
+        mkdir -p public
+        echo "<!DOCTYPE html>
+        <html>
+        <head>
+            <title>Python Testing Demo - Test Reports</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+                .header { text-align: center; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 20px; margin-bottom: 30px; }
+                .python-version { background: #ecf0f1; margin: 20px 0; padding: 20px; border-radius: 8px; border-left: 5px solid #3498db; }
+                .links { display: flex; gap: 15px; flex-wrap: wrap; }
+                .link { background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; transition: background 0.3s; }
+                .link:hover { background: #2980b9; }
+                .badge { background: #27ae60; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>🐍 Python Testing Demo</h1>
+                    <h2>Automated Test Reports</h2>
+                    <p>Generated on $(date)</p>
+                    <span class='badge'>✅ All Tests Passing</span>
+                </div>" > public/index.html
+
+        # Add links for each Python version
+        for dir in all-reports/test-results-python*/; do
+          if [ -d "$dir" ]; then
+            version=$(basename "$dir" | sed 's/test-results-python//')
+            echo "<div class='python-version'>
+                    <h3>Python $version Results</h3>
+                    <div class='links'>
+                      <a href='$(basename "$dir")/reports/test_report_python$version.html' class='link'>📊 Test Report</a>
+                      <a href='$(basename "$dir")/reports/coverage_python$version/index.html' class='link'>📈 Coverage Report</a>
+                    </div>
+                  </div>" >> public/index.html
+            cp -r "$dir" public/
+          fi
+        done
+
+        echo "</div></body></html>" >> public/index.html
+
+    - name: 🚀 Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
+        
+  notify:
+    needs: [test, deploy-reports]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 📧 Notify on success
+      if: needs.test.result == 'success'
+      run: |
+        echo "✅ All tests passed successfully!"
+        echo "📊 Test reports are available at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+        
+    - name: 🚨 Notify on failure
+      if: needs.test.result == 'failure'
+      run: |
+        echo "❌ Some tests failed!"
+        echo "Please check the test results in the Actions tab."

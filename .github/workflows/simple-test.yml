@@ -1,0 +1,52 @@
+name: Simple Python Tests
+
+# When to run this workflow
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    # Use Ubuntu as our testing environment
+    runs-on: ubuntu-latest
+    
+    steps:
+    # Step 1: Get our code
+    - name: 📥 Get the code
+      uses: actions/checkout@v4
+
+    # Step 2: Set up Python
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    # Step 3: Install testing tools
+    - name: 📦 Install pytest and HTML reporter
+      run: |
+        pip install pytest pytest-html
+
+    # Step 4: Run our tests
+    - name: 🧪 Run tests
+      run: |
+        mkdir -p test-reports
+        pytest test_main.py -v --html=test-reports/report.html --self-contained-html
+
+    # Step 5: Save the test report
+    - name: 📊 Save test report
+      uses: actions/upload-artifact@v3
+      if: always()  # Always save, even if tests fail
+      with:
+        name: test-report
+        path: test-reports/
+
+    # Step 6: Show results
+    - name: 🎉 Tests completed!
+      if: success()
+      run: echo "✅ All tests passed! Great job!"
+      
+    - name: 😞 Tests failed
+      if: failure()
+      run: echo "❌ Some tests failed. Check the report for details."
